@@ -25,7 +25,7 @@
     "author": "西安-beyond,zkjiao@gmail.com",
     "category": "Generic Modules/Base",
     'summary': "补丁",
-    'website':"",
+    'website':"https://github.com/mmbtba/patch_download_preview",
     "description": """
 优化补丁
 =======================
