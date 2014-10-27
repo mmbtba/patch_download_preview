@@ -1,0 +1,6 @@
+@charset "UTF-8";
+.preview_header{
+	/* background-color: rgb(204,204,204);  */
+	min-height: 34px; 
+    border-bottom-style: outset;
+}

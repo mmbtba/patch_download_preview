@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <template id="assets_backend" name="patch_download_preview assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+            	<link rel="stylesheet" href="/patch_download_preview/static/src/css/patch_download_preview.css"/>
+                <script type="text/javascript" src="/patch_download_preview/static/src/js/patch_download_preview.js"></script>
+            </xpath>
+        </template>
+    </data>
+</openerp>
