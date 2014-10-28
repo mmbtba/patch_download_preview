@@ -47,12 +47,28 @@ openerp.patch_download_preview = function(instance) {
 				name : id
 			})).appendTo(document.body);
 			$preview.find("iframe").load(function() {
-				$preview.find(".preview_header").show();
-				if (options.success) {
-					options.success();
+				var body = this.contentDocument.body;
+				if (body.innerText){
+					try {
+	                    if (options.error) {	                        
+	                        var node = body.childNodes[1] || body.childNodes[0];
+	                        options.error(JSON.parse(node.textContent));
+	                    }
+	                } finally {
+	                	if (options.complete) {
+							options.complete();
+						}
+	                	$preview.remove();
+	                }
 				}
-				if (options.complete) {
-					options.complete();
+				else{
+					$preview.find(".preview_header").show();
+					if (options.success) {
+						options.success();
+					}
+					if (options.complete) {
+						options.complete();
+					}
 				}
 			});
 			$preview.on('hidden.bs.modal', this, function() {
