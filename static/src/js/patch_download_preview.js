@@ -27,26 +27,38 @@ openerp.patch_download_preview = function(instance) {
 			return this.open_preview(options);
 		},
 		open_preview : function(options) {
-			var token = new Date().getTime();
-			var id = _.uniqueId('get_file_frame');
+			var timer, token = new Date().getTime(),
+	            cookie_name = 'fileToken', cookie_length = cookie_name.length,
+	            CHECK_INTERVAL = 1000, id = _.uniqueId('get_file_frame'),
+	            remove_form = false;
+			    remove_target = true;
 
-			var params = _.extend({}, options.data || {}, {
-				token : token
-			});
-			var url = this.url(options.url, params);
 			// iOS devices doesn't allow iframe use the way we do it,
 			// opening a new window seems the best way to workaround
 			if (navigator.userAgent.match(/(iPod|iPhone|iPad)/)) {
+				var params = _.extend({}, options.data || {}, {token: token});
+	            var url = this.url(options.url, params);
 				instance.web.unblockUI();
 				return window.open(url);
 			}
-			$preview = $(QWeb.render('PreviewWidget', {
+			var $form, $form_data = $('<div>');
+			
+			var complete = function () {
+	            if (options.complete) { options.complete(); }
+	            clearTimeout(timer);
+	            $form_data.remove();
+	            if(remove_target && $target) { $target.remove(); }
+	            if (remove_form && $form) { $form.remove(); }
+	        };
+	        
+	        $target = $(QWeb.render('PreviewWidget', {
 				title : _lt("Preview"),
-				url : url,
+				url : "javascript:false",
 				id : id,
 				name : id
 			})).appendTo(document.body);
-			$preview.find("iframe").load(function() {
+	        
+	        $target.find("iframe").load(function() {
 				var body = this.contentDocument.body;
 				if (body.innerText){
 					try {
@@ -56,29 +68,73 @@ openerp.patch_download_preview = function(instance) {
 	                        options.error(JSON.parse(node.textContent));
 	                    }
 	                } finally {
-	                	if (options.complete) {
-							options.complete();
-						}
-	                	$preview.remove();
+	                	complete();
 	                }
 				}
 				else{
-					$preview.find("#preview_widget").show();
+					$target.find("#preview_widget").show();
 					if (options.success) {
 						options.success();
 					}
-					if (options.complete) {
-						options.complete();
-					}
+					remove_target = false;
+					complete();
 				}
 			});
-			$preview.on('hidden.bs.modal', this, function() {
-				$preview.remove();
+	        $target.on('hidden.bs.modal', this, function() {
+	        	$target.remove();
 			});
-			$preview.modal({
+	        $target.modal({
 				'backdrop' : false,
 			});
-			$preview.modal('show');
+	        $target.modal('show');
+			
+			if (options.form) {
+	            $form = $(options.form);
+	        } else {
+	            remove_form = true;
+	            $form = $('<form>', {
+	                action: options.url,
+	                method: 'POST'
+	            }).appendTo(document.body);
+	        }
+
+	        var hparams = _.extend({}, options.data || {}, {token: token});
+	        if (this.override_session)
+	            hparams.session_id = this.session_id;
+	        
+	        _.each(hparams, function (value, key) {
+	                var $input = $form.find('[name=' + key +']');
+	                if (!$input.length) {
+	                    $input = $('<input type="hidden" name="' + key + '">')
+	                        .appendTo($form_data);
+	                }
+	                $input.val(value);
+	            });
+
+	        $form
+	            .append($form_data)
+	            .attr('target', id)
+	            .get(0).submit();
+
+	        var waitLoop = function () {
+	            var cookies = document.cookie.split(';');
+	            // setup next check
+	            timer = setTimeout(waitLoop, CHECK_INTERVAL);
+	            for (var i=0; i<cookies.length; ++i) {
+	                var cookie = cookies[i].replace(/^\s*/, '');
+	                if (!cookie.indexOf(cookie_name === 0)) { continue; }
+	                var cookie_val = cookie.substring(cookie_length + 1);
+	                if (parseInt(cookie_val, 10) !== token) { continue; }
+
+	                // clear cookie
+	                document.cookie = _.str.sprintf("%s=;expires=%s;path=/",
+	                    cookie_name, new Date().toGMTString());
+	                if (options.success) { options.success(); }
+	                complete();
+	                return;
+	            }
+	        };
+	        timer = setTimeout(waitLoop, CHECK_INTERVAL);
 			return;
 		}
 	});
