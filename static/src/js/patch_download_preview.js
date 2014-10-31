@@ -51,7 +51,8 @@ openerp.patch_download_preview = function(instance) {
 				if (body.innerText){
 					try {
 	                    if (options.error) {	                        
-	                    	var node = $(body).find("p").get(0);
+	                    	var node = $(body).find("p").get(0) || 
+	                    		body.childNodes[1] || body.childNodes[0];
 	                        options.error(JSON.parse(node.textContent));
 	                    }
 	                } finally {
