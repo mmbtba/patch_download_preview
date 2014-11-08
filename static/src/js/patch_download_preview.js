@@ -82,6 +82,7 @@ openerp.patch_download_preview = function(instance) {
 						}
 					} catch(e) {
 						remove_target = false;
+						$(body).css("background","white");
 					}
 				}
 				else{
